@@ -138,11 +138,11 @@ if st.checkbox('Utilizar el primer modelo'):
     response = requests.get(url)
     open("my_model.pkl", "wb").write(response.content)
     best_model = joblib.load("my_model.pkl")
-    uploaded_file = st.file_uploader(label='upload dataset for prediction')
+    uploaded_file = st.file_uploader(label='Datos cargados para el pronostico')
     final_d = ''
     if uploaded_file is not None:
-        data_predi = pd.read_json(uploaded_file.getvalue())
-        prediction = get_final_pred_mv0(data_predi, best_model)
+        data_prediction = pd.read_json(uploaded_file.getvalue())
+        prediction = get_final_pred_mv0(data_prediction, best_model)
         print("final prediction", prediction)
         final_d = st.dataframe(prediction)
         st.write(f"Your churn results: {final_d}")
@@ -153,10 +153,10 @@ if st.checkbox('Utilizar el segundo modelo'):
     if uploaded_file is not None:
         data_2_train = pd.read_json(uploaded_file.getvalue())
         model_2 = reentrenamiento(data_2_train, data_train_1)
-        uploaded_file = st.file_uploader(label='upload dataset for predictions')
+        uploaded_file = st.file_uploader(label='Datos cargados para el pronostico')
         if uploaded_file is not None:
-            pred = pd.read_json(uploaded_file.getvalue())
-            prediction2 = get_final_pred_mv0(pred, model_2)
+            prediction1 = pd.read_json(uploaded_file.getvalue())
+            prediction2 = get_final_pred_mv0(prediction1, model_2)
             print("final prediction", prediction2)
             final_d = st.dataframe(prediction2)
             st.write(f"Your churn results: {final_d}")
