@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -150,10 +152,10 @@ if st.checkbox('check for use first model'):
     uploaded_file = st.file_uploader(label='upload dataset for prediction')
     final_d = ''
     if uploaded_file is not None:
-        data_predi = uploaded_file.getvalue()
+        data_predi = pd.read_json(uploaded_file.getvalue())
         prediction = get_final_pred_mv0(data_predi, best_model)
         print("final prediction", prediction)
-        final_d = prediction
+        final_d = st.dataframe(prediction)
         st.write(f"Your churn results: {final_d}")
 
 if st.button('Make Prediction with new model'):
