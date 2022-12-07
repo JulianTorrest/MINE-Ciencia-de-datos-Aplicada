@@ -40,7 +40,7 @@ def load_pred():
 
 
 def cleaning(dataset):
-    # se limpia la columna TotalChares que tiene problemas con valores 0
+    # Limpiar TotalCharges 0
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -54,7 +54,7 @@ def cleaning(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # se hace la transformación
+    # Transformación
     objetivo = objetivo.replace(['No', 'Yes'], [0, 1])
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
@@ -67,7 +67,7 @@ def cleaning(dataset):
 
 
 def cleaning_1(dataset):
-    # se limpia la columna TotalChares que tiene problemas con valores 0
+    # Limpiar TotalCharges  0
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -80,13 +80,13 @@ def cleaning_1(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # se hace la transformación
+    # Transformación
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
     categoricas_2 = pd.get_dummies(categoricas_2)
     numericas = numericas.astype(float)
 
-    # se construye todo el dataset limpio de nuevo
+    # Dataset Limpio
     clean_dataset = pd.DataFrame().join([gender, categoricas_1, categoricas_2, numericas], how="outer")
     return clean_dataset
 
@@ -95,7 +95,7 @@ def get_final_pred_mv0(dataset, model):
     # se limpia para que pueda ser ingerido por el modelo
     clean_df3 = cleaning_1(dataset)
 
-    # se hace la predicción con el primer modelo
+    # Pronostico del primer modelo
     df_predicted = pd.DataFrame(model.predict(clean_df3)).replace([0, 1], ['No', 'Yes'])
     df_precited_proba = pd.DataFrame(model.predict_proba(clean_df3)[:, 1])
     df_predicted["proba"] = df_precited_proba
@@ -116,7 +116,7 @@ def reentrenamiento(df1, df2):
 
     scaler = StandardScaler()
 
-    # se hace el pipeline con la regresión logística
+    # Pipeline
     logistic = LogisticRegression(max_iter=1000, tol=0.1, class_weight='balanced', multi_class='multinomial',
                                   random_state=33)
     pipe = Pipeline(steps=[("scaler", scaler), ("polynomial", PolynomialFeatures()), ("logistic", logistic)])
@@ -128,7 +128,7 @@ def reentrenamiento(df1, df2):
         "logistic__solver": ['liblinear', 'saga'],
     }
 
-    # se busca el mejor modelo y regresa el score
+    # Buscar mejor modelo
     logistic_rtmodel = GridSearchCV(pipe, param_grid, n_jobs=2, scoring='roc_auc', cv=5).fit(X, Y)
     # score_logistic = roc_auc_score(Y_test, logistic_model.predict_proba(X_test)[:, 1])
 
@@ -137,24 +137,24 @@ def reentrenamiento(df1, df2):
     return logistic_rtmodel
 
 
-if st.checkbox('check for use first model'):
+if st.checkbox('Seleccionar primer modelo'):
     # load model
-    uploaded_file = st.file_uploader(label='upload dataset for prediction')
+    uploaded_file = st.file_uploader(label='Datos cargados para pronostico')
     final_d = ''
     if uploaded_file is not None:
         data_predi = pd.read_json(uploaded_file.getvalue())
         prediction = get_final_pred_mv0(data_predi, best_model)
         # print("final prediction", prediction)
         final_d = st.dataframe(prediction)
-        # st.write(f"Your churn results: {final_d}")
+        # st.write(f"Sus resultados: {final_d}")
 
-if st.checkbox('check for use second model'):
-    uploaded_file = st.file_uploader(label='upload dataset for training')
+if st.checkbox('Seleccionar segundo modelo'):
+    uploaded_file = st.file_uploader(label='Datos cargados para entrenamiento')
     final_d = ''
     if uploaded_file is not None:
         data_2_train = pd.read_json(uploaded_file.getvalue())
         model_2 = reentrenamiento(data_2_train, data_train_1)
-        uploaded_file = st.file_uploader(label='upload dataset for predictions')
+        uploaded_file = st.file_uploader(label='Datos cargados para pronostico')
         if uploaded_file is not None:
             pred = pd.read_json(uploaded_file.getvalue())
             prediction2 = get_final_pred_mv0(pred, model_2)
@@ -177,7 +177,7 @@ if st.checkbox('check for use second model'):
             st.dataframe(df_a)
             print(roc_auc_score(Y_test, best_model.predict_proba(X_test)[:, 1]))
             b = roc_auc_score(Y_test, best_model.predict_proba(X_test)[:, 1])
-            st.write(f"Your original roc_auc_score: {b}")
+            st.write(f"Puntaje de la curva ROC: {b}")
 
             # segundo modelo
 
@@ -190,4 +190,4 @@ if st.checkbox('check for use second model'):
             print(roc_auc_score(Y_test, model_2.predict_proba(X_test)[:, 1]))
             d = roc_auc_score(Y_test, model_2.predict_proba(X_test)[:, 1])
             # df_d = pd.DataFrame(d).transpose()
-            st.write(f"Your new roc_auc_score: {d}")
+            st.write(f"Nuevo puntaje de la curva ROC: {d}")
