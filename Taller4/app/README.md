@@ -1,1 +1,1 @@
-Alojamiento de aplicacion de predicion. 
+Aplicación. 
