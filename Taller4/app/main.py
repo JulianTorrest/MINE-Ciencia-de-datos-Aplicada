@@ -27,23 +27,26 @@ st.title('Taller 4, churn Rate')
 
 def load_data():
     uploaded_file = st.file_uploader(label='upload dataset for training')
-    #data_train = pd.read_json(
-     #   'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/data/DataSet_Entrenamiento_v2.json')
+    # data_train = pd.read_json(
+    #   'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/data/DataSet_Entrenamiento_v2.json')
     if uploaded_file is not None:
         data_train = uploaded_file.getvalue()
-    return data_train
+        return data_train
+    else:
+        return 'upload data'
 
 
 def load_pred():
     uploaded_file = st.file_uploader(label='upload dataset for training')
-    #data_pred = pd.read_json('https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/data'
-                 #'/DataSet_Prediccion.json')
+    # data_pred = pd.read_json('https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/data'
+    # '/DataSet_Prediccion.json')
     if uploaded_file is not None:
         data_pred = uploaded_file.getvalue()
-    return data_pred
+        return data_pred
+
 
 def cleaning(dataset):
-    # se limpia la columna TotalChares que tiene problemas con valores 0
+    # Limpieza TotalChares
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -57,20 +60,20 @@ def cleaning(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # se hace la transformación
+    # Transformación
     objetivo = objetivo.replace(['No', 'Yes'], [0, 1])
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
     categoricas_2 = pd.get_dummies(categoricas_2)
     numericas = numericas.astype(float)
 
-    # se construye todo el dataset limpio de nuevo
+    # Dataset limpio
     clean_dataset = pd.DataFrame().join([objetivo, gender, categoricas_1, categoricas_2, numericas], how="outer")
     return clean_dataset
 
 
 def cleaning_1(dataset):
-    # se limpia la columna TotalChares que tiene problemas con valores 0
+    # Limpieza Total Chares
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -83,13 +86,13 @@ def cleaning_1(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # Realiza la transformación
+    # Transformación
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
     categoricas_2 = pd.get_dummies(categoricas_2)
     numericas = numericas.astype(float)
 
-    # Dataset limpio
+    # se construye todo el dataset limpio de nuevo
     clean_dataset = pd.DataFrame().join([gender, categoricas_1, categoricas_2, numericas], how="outer")
     return clean_dataset
 
@@ -98,7 +101,7 @@ def get_final_pred_mv0(dataset, model):
     # se limpia para que pueda ser ingerido por el modelo
     clean_df3 = cleaning_1(dataset)
 
-    # Predicción con el primer modelo
+    # Pronostico con el primer modelo
     df_predicted = pd.DataFrame(model.predict(clean_df3)).replace([0, 1], ['No', 'Yes'])
     df_precited_proba = pd.DataFrame(model.predict_proba(clean_df3)[:, 1])
     df_predicted["proba"] = df_precited_proba
@@ -119,7 +122,7 @@ def reentrenamiento(df1, df2):
 
     scaler = StandardScaler()
 
-    # Pipeline con regresión logistica
+    # Realizar el pipeline
     logistic = LogisticRegression(max_iter=1000, tol=0.1, class_weight='balanced', multi_class='multinomial',
                                   random_state=33)
     pipe = Pipeline(steps=[("scaler", scaler), ("polynomial", PolynomialFeatures()), ("logistic", logistic)])
@@ -131,7 +134,7 @@ def reentrenamiento(df1, df2):
         "logistic__solver": ['liblinear', 'saga'],
     }
 
-    # Mejor modelo y devuelve el score
+    # Buscar el mejor modelo
     logistic_rtmodel = GridSearchCV(pipe, param_grid, n_jobs=2, scoring='roc_auc', cv=5).fit(X, Y)
     # score_logistic = roc_auc_score(Y_test, logistic_model.predict_proba(X_test)[:, 1])
 
@@ -140,21 +143,20 @@ def reentrenamiento(df1, df2):
     return logistic_rtmodel
 
 
-if st.checkbox('Verificar el primer modelo'):
+if st.checkbox('Utilizar primer modelo'):
     # load model
-    url = 'https://github.com/DavidPachis/dataScience/raw/main/taller4/model/my_model.pkl'
+    url = 'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/model/my_model.pkl'
     response = requests.get(url)
     open("my_model.pkl", "wb").write(response.content)
     best_model = joblib.load("my_model.pkl")
+    if st.button('Make Prediction'):
+        data_predi = load_pred()
+        prediction = get_final_pred_mv0(data_predi, best_model)
+        # print("final prediction", np.squeeze(prediction))
+        final_d = st.table(prediction)
+        st.write(f"Your churn: {final_d}")
 
-if st.button('Realizar el pronostico'):
-    data_predi= load_pred()
-    prediction = get_final_pred_mv0(data_predi, best_model)
-    # print("final prediction", np.squeeze(prediction))
-    final_d = st.table(prediction)
-    st.write(f"Your churn: {final_d}")
-
-if st.button('Realizar el pronostico con el nuevo modelo'):
+if st.button('Pronostico con nuevo modelo'):
     data_2_train = load_data()
     # data_2_train = cleaning(data_2_train)
     model_2 = reentrenamiento(data_2_train, data_train_1)
