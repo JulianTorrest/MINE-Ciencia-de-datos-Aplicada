@@ -32,8 +32,6 @@ def load_data():
     if uploaded_file is not None:
         data_train = uploaded_file.getvalue()
         return data_train
-    else:
-        return 'upload data'
 
 
 def load_pred():
@@ -46,7 +44,7 @@ def load_pred():
 
 
 def cleaning(dataset):
-    # Limpieza TotalChares
+    # se limpia la columna TotalChares que tiene problemas con valores 0
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -60,20 +58,20 @@ def cleaning(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # Transformación
+    # se hace la transformación
     objetivo = objetivo.replace(['No', 'Yes'], [0, 1])
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
     categoricas_2 = pd.get_dummies(categoricas_2)
     numericas = numericas.astype(float)
 
-    # Dataset limpio
+    # se construye todo el dataset limpio de nuevo
     clean_dataset = pd.DataFrame().join([objetivo, gender, categoricas_1, categoricas_2, numericas], how="outer")
     return clean_dataset
 
 
 def cleaning_1(dataset):
-    # Limpieza Total Chares
+    # se limpia la columna TotalChares que tiene problemas con valores 0
     dataset.loc[dataset["tenure"] == 0, "TotalCharges"] = "0"
     dataset['TotalCharges'].astype(float)
     # se asocian por tipo las columnas
@@ -86,7 +84,7 @@ def cleaning_1(dataset):
     ]]
     excluidas = dataset[["customerID", "MultipleLines"]]
 
-    # Transformación
+    # se hace la transformación
     gender = gender.replace(['Female', 'Male'], [0, 1])
     categoricas_1 = categoricas_1.replace(['No', 'Yes'], [0, 1])
     categoricas_2 = pd.get_dummies(categoricas_2)
@@ -101,7 +99,7 @@ def get_final_pred_mv0(dataset, model):
     # se limpia para que pueda ser ingerido por el modelo
     clean_df3 = cleaning_1(dataset)
 
-    # Pronostico con el primer modelo
+    # se hace la predicción con el primer modelo
     df_predicted = pd.DataFrame(model.predict(clean_df3)).replace([0, 1], ['No', 'Yes'])
     df_precited_proba = pd.DataFrame(model.predict_proba(clean_df3)[:, 1])
     df_predicted["proba"] = df_precited_proba
@@ -122,7 +120,7 @@ def reentrenamiento(df1, df2):
 
     scaler = StandardScaler()
 
-    # Realizar el pipeline
+    # se hace el pipeline con la regresión logística
     logistic = LogisticRegression(max_iter=1000, tol=0.1, class_weight='balanced', multi_class='multinomial',
                                   random_state=33)
     pipe = Pipeline(steps=[("scaler", scaler), ("polynomial", PolynomialFeatures()), ("logistic", logistic)])
@@ -134,7 +132,7 @@ def reentrenamiento(df1, df2):
         "logistic__solver": ['liblinear', 'saga'],
     }
 
-    # Buscar el mejor modelo
+    # se busca el mejor modelo y regresa el score
     logistic_rtmodel = GridSearchCV(pipe, param_grid, n_jobs=2, scoring='roc_auc', cv=5).fit(X, Y)
     # score_logistic = roc_auc_score(Y_test, logistic_model.predict_proba(X_test)[:, 1])
 
@@ -143,20 +141,22 @@ def reentrenamiento(df1, df2):
     return logistic_rtmodel
 
 
-if st.checkbox('Utilizar primer modelo'):
+if st.checkbox('check for use first model'):
     # load model
     url = 'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/model/my_model.pkl'
     response = requests.get(url)
     open("my_model.pkl", "wb").write(response.content)
     best_model = joblib.load("my_model.pkl")
-    if st.button('Make Prediction'):
-        data_predi = load_pred()
+    uploaded_file = st.file_uploader(label='upload dataset for prediction')
+    final_d = ''
+    if uploaded_file is not None:
+        data_predi = uploaded_file.getvalue()
         prediction = get_final_pred_mv0(data_predi, best_model)
-        # print("final prediction", np.squeeze(prediction))
-        final_d = st.table(prediction)
-        st.write(f"Your churn: {final_d}")
+        print("final prediction", prediction)
+        final_d = prediction
+        st.write(f"Your churn results: {final_d}")
 
-if st.button('Pronostico con nuevo modelo'):
+if st.button('Make Prediction with new model'):
     data_2_train = load_data()
     # data_2_train = cleaning(data_2_train)
     model_2 = reentrenamiento(data_2_train, data_train_1)
