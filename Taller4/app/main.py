@@ -134,10 +134,10 @@ def reentrenamiento(df1, df2):
 
 if st.checkbox('Utilizar el primer modelo'):
     # load model
-    url = 'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/model/my_model.pkl'
+    url = 'https://raw.githubusercontent.com/JulianTorrest/MINE-Ciencia-de-datos-Aplicada/main/Taller4/model/Modelo.pkl'
     response = requests.get(url)
-    open("my_model.pkl", "wb").write(response.content)
-    best_model = joblib.load("my_model.pkl")
+    open("Modelo.pkl", "wb").write(response.content)
+    best_model = joblib.load("Modelo.pkl")
     uploaded_file = st.file_uploader(label='Datos cargados para el pronostico')
     final_d = ''
     if uploaded_file is not None:
